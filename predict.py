@@ -222,19 +222,31 @@ def run_test_inference(
         )
 
     # Collect anomaly maps
+    # Predictions are batched: image_path is a list, anomaly_map has batch dim
     anomaly_maps = {}
     if predictions is not None:
         for pred in predictions:
-            fname = Path(pred.image_path).name
-            amap = pred.anomaly_map
-            if isinstance(amap, torch.Tensor):
-                amap = amap.squeeze().cpu().numpy()
-            # Normalize to [0, 1]
-            if amap.max() > amap.min():
-                amap = (amap - amap.min()) / (amap.max() - amap.min())
-            else:
-                amap = np.zeros_like(amap)
-            anomaly_maps[fname] = amap
+            image_paths_batch = pred.image_path
+            anomaly_maps_batch = pred.anomaly_map
+
+            # Handle single prediction (non-list) case
+            if isinstance(image_paths_batch, (str, Path)):
+                image_paths_batch = [image_paths_batch]
+                anomaly_maps_batch = anomaly_maps_batch.unsqueeze(0) if isinstance(anomaly_maps_batch, torch.Tensor) else [anomaly_maps_batch]
+
+            for i, img_path_str in enumerate(image_paths_batch):
+                fname = Path(img_path_str).name
+                if isinstance(anomaly_maps_batch, torch.Tensor):
+                    amap = anomaly_maps_batch[i].squeeze().cpu().numpy()
+                else:
+                    amap = np.array(anomaly_maps_batch[i])
+
+                # Normalize to [0, 1]
+                if amap.max() > amap.min():
+                    amap = (amap - amap.min()) / (amap.max() - amap.min())
+                else:
+                    amap = np.zeros_like(amap)
+                anomaly_maps[fname] = amap
 
     return anomaly_maps
 
