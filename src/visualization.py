@@ -38,15 +38,15 @@ def create_overlay(
     pred_overlay = cv2.addWeighted(image, 1 - alpha, pred_heatmap, alpha, 0)
 
     if gt_mask is not None:
-        # GT mask as green overlay
+        # GT mask as green overlay using direct blending
         gt_vis = image.copy()
         gt_colored = np.zeros_like(image)
         gt_colored[:, :, 1] = 255  # Green channel
         mask_bool = gt_mask > 0
-        gt_vis[mask_bool] = cv2.addWeighted(
-            image[mask_bool], 1 - alpha,
-            gt_colored[mask_bool], alpha, 0
-        )
+        gt_vis[mask_bool] = (
+            (1 - alpha) * image[mask_bool].astype(np.float32)
+            + alpha * gt_colored[mask_bool].astype(np.float32)
+        ).astype(np.uint8)
         combined = np.hstack([image, gt_vis, pred_overlay])
     else:
         combined = np.hstack([image, pred_overlay])
