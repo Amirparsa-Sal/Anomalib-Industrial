@@ -272,7 +272,11 @@ def predict_class(
     print(f"  Checkpoint: {ckpt_path}")
 
     # Create model and engine
-    model = get_model(args.algorithm, **model_kwargs)
+    model = get_model(
+        args.algorithm,
+        image_size=(args.img_size, args.img_size),
+        **model_kwargs,
+    )
     engine = Engine(accelerator="auto", devices=1)
 
     # Run inference

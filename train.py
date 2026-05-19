@@ -270,16 +270,14 @@ def train_class(
     dir_paths = prepare_data_directory(split_info, str(prepared_dir), class_name)
 
     # Step 3: Create Anomalib Folder datamodule
-    # Use prepared directory with pre-split data
+    # Image resizing is handled by the model's PreProcessor (not the datamodule)
     datamodule = Folder(
         name=class_name,
         root=str(prepared_dir / class_name),
         normal_dir="train/normal",
         abnormal_dir="val/anomalous",
         normal_test_dir="val/normal",
-        abnormal_test_dir="val/anomalous",
         mask_dir="val_masks/anomalous",
-        image_size=(args.img_size, args.img_size),
         train_batch_size=args.batch_size,
         eval_batch_size=args.batch_size,
         test_split_mode="from_dir",
@@ -288,7 +286,12 @@ def train_class(
     )
 
     # Step 4: Create model and engine
-    model = get_model(args.algorithm, **model_kwargs)
+    # Image size is configured via model's PreProcessor (Resize + Normalize)
+    model = get_model(
+        args.algorithm,
+        image_size=(args.img_size, args.img_size),
+        **model_kwargs,
+    )
     max_epochs = args.max_epochs or get_default_max_epochs(args.algorithm)
 
     # Determine checkpoint directory
